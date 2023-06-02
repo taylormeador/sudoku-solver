@@ -134,18 +134,33 @@ class Board:
             string_ += f"{bitboard}\n"
         return string_
 
-    def square(self, position: int) -> set[int]:
+    def _row(self, row_index: int) -> set[int]:
+        """Returns a set of the numbers in a row. The row_index is an
+        integer 0-8, representing the rows of the board, from bottom to top.
+        """
+        numbers = self.to_list()
+        indices = (row_index * 9, row_index * 9 + 9)
+        return set(numbers[indices[0] : indices[1]])
+
+    def _column(self, column_index: int) -> set[int]:
+        """Returns a set of the numbers in a column. The col_index is an
+        integer 0-8, representing the rows of the board, from right to left.
+        """
+        numbers = self.to_list()
+        indices = [column_index + offset for offset in range(0, 81, 9)]
+        return set([numbers[index] for index in indices])
+
+    def _square(self, position: int) -> set[int]:
         """Returns a set containing the numbers in the position's square.
         The position is defined as an integer 0-8, from the bottom left to
-        the top right of the board. This function does not care if the square
-        contains repeat numbers.
+        the top right of the board.
         """
-        square = set()
         numbers = self.to_list()
         indices = self._square_indices[position]
-        for index_pair in indices:
-            square.update(numbers[index_pair[0] : index_pair[1]])
-        return square
+        rows = [numbers[index_pair[0] : index_pair[1]] for index_pair in indices]
+        flattened_rows = [number for row in rows for number in row]
+        return set(flattened_rows)
 
     def generate_random_board(self, difficulty: str = "Medium", solved: bool = False):
         """Generates a random, valid game board, solved or unsolved."""
+        pass

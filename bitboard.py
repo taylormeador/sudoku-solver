@@ -49,6 +49,20 @@ class Bitboard:
         return f"<bitboard #{self._number}: {self.decimal_value}>"
 
 
+def _get_square_indices() -> dict[list[tuple]]:
+    square_indices = {}
+    for position in range(9):
+        vertical_offset = position // 3 * 27
+        horizontal_offset = position % 3 * 3
+        bottom_right_index = horizontal_offset + vertical_offset
+        position_indices = [
+            (bottom_right_index + offset, bottom_right_index + offset + 3)
+            for offset in (0, 9, 18)
+        ]
+        square_indices[position] = position_indices
+    return square_indices
+
+
 class Board:
     """Class that represents the entirety of the sudoku board."""
 
@@ -63,9 +77,11 @@ class Board:
         self._eight = Bitboard(8)
         self._nine = Bitboard(9)
 
+        self._square_indices = _get_square_indices()
+
     @property
-    def bitboards(self) -> tuple[Bitboard]:
-        """Returns a tuple of the bitboards."""
+    def _bitboards(self) -> tuple[Bitboard]:
+        """Returns a tuple of all the bitboards."""
         bitboards = (
             self._one,
             self._two,
@@ -80,24 +96,24 @@ class Board:
         return bitboards
 
     def bitboard(self, number: int):
-        """Returns the bitboard corresponding to the number argument"""
+        """Returns the bitboard corresponding to the number argument."""
         assert 1 <= number <= 9, "Invalid bitboard selection"
-        return self.bitboards[number - 1]
+        return self._bitboards[number - 1]
 
-    def listify(self):
-        """Combines all bitboards into a list of 81 integers. 0 represents a blank square."""
+    def to_list(self) -> list[int]:
+        """Combines all bitboards into a list of 81 integers. 0 represents a blank cell."""
         numbers = [0] * 81
-        for bitboard in self.bitboards:
-            for bit in range(81):
-                if bitboard.decimal_value & 1 << bit:
-                    numbers[80 - bit] = bitboard.number
+        for bitboard in self._bitboards:
+            for cell in range(81):
+                if bitboard.decimal_value & 1 << cell:
+                    numbers[cell] = bitboard.number
         return numbers
 
     def print_board(self) -> None:
         """Prints the sudoku board in human readable form."""
         horizontal_line = " ———————————————————————"
-        numbers = self.listify()
-        for i, number in enumerate(numbers):
+        numbers = self.to_list()
+        for i, number in enumerate(numbers[::-1]):
             if i % 9 == 0:
                 print()
                 if i % 27 == 0:
@@ -114,6 +130,22 @@ class Board:
     def __repr__(self) -> str:
         """String representation of Board object."""
         string_ = "\n"
-        for bitboard in self.bitboards:
+        for bitboard in self._bitboards:
             string_ += f"{bitboard}\n"
         return string_
+
+    def square(self, position: int) -> set[int]:
+        """Returns a set containing the numbers in the position's square.
+        The position is defined as an integer 0-8, from the bottom left to
+        the top right of the board. This function does not care if the square
+        contains repeat numbers.
+        """
+        square = set()
+        numbers = self.to_list()
+        indices = self._square_indices[position]
+        for index_pair in indices:
+            square.update(numbers[index_pair[0] : index_pair[1]])
+        return square
+
+    def generate_random_board(self, difficulty: str = "Medium", solved: bool = False):
+        """Generates a random, valid game board, solved or unsolved."""

@@ -56,6 +56,23 @@ class Bitboard:
     def __repr__(self) -> str:
         return f"<bitboard #{self._number}: {self.decimal_value}>"
 
+    def print_bitboard(self):
+        """Prints the bitboard in 9x9 form."""
+        horizontal_line = " ———————————————————————"
+        for i, number in enumerate(self.binary_value):
+            if i % 9 == 0:
+                print()
+                if i % 27 == 0:
+                    print(horizontal_line)
+
+                print("|", end="")
+
+            print(f" {number}", end="")
+
+            if (i + 1) % 3 == 0 or (i + 1) % 6 == 0:
+                print(" |", end="")
+        print(f"\n{horizontal_line} \n")
+
     def is_in_row(self, row_index: int) -> bool:
         """Returns a boolean indiciating if the number is in the row."""
         shifts = range(row_index * 9, row_index * 9 + 9)
@@ -154,7 +171,7 @@ class Board:
         return numbers
 
     def print_board(self) -> None:
-        """Prints the sudoku board in human readable form."""
+        """Prints the sudoku board in 9x9 form."""
         horizontal_line = " ———————————————————————"
         numbers = self.to_list()
         for i, number in enumerate(numbers[::-1]):

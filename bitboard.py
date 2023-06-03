@@ -1,10 +1,12 @@
 """Custom classes for internally representing the sudoku game as bitboards."""
 
+# TODO consider enums for square positions, cell indices, etc.
+
 
 class Bitboard:
     """Each number of the sudoku puzzle has its own bitboard.
-    The bitboard is an 81 digit binary number.
-    The 81 digits represent the squares of the sudoku board,
+    The bitboard is an 81 digit number, conceptualized in binary.
+    The 81 digits represent the cells of the sudoku board,
     from right to left, bottom to top. This is backwards from
     the way we naturally read in order to make bitwise
     operations and reasoning easy.
@@ -13,6 +15,12 @@ class Bitboard:
     def __init__(self, number: int) -> None:
         self._number = number
         self._value: int = 0
+
+        # since zero represents a blank cell, and we want to initialize the board
+        # completely blank, we turn on all the bits in the zero bitboard
+        if self._number == 0:
+            for i in range(81):
+                self.set_bit(i)
 
     @property
     def decimal_value(self) -> int:
@@ -29,37 +37,69 @@ class Bitboard:
         """Returns the number (1-9) that this bitboard represents."""
         return self._number
 
-    def set_bit(self, position: int) -> None:
+    def set_bit(self, cell_index: int) -> None:
         """Turns on the bit at the position, if it is off.
         Otherwise, do nothing.
         """
-        assert 0 <= position <= 80, "Invalid position"
-        if not self._value & 1 << position:
-            self._value += 1 << position
+        assert 0 <= cell_index <= 80, "Invalid cell_index"
+        if not self._value & 1 << cell_index:
+            self._value += 1 << cell_index
 
-    def reset_bit(self, position: int) -> None:
+    def reset_bit(self, cell_index: int) -> None:
         """Turns off the bit at the position, if it is on.
         Otherwise, do nothing.
         """
-        assert 0 <= position <= 80, "Invalid position"
-        if self._value & 1 << position:
-            self._value -= 1 << position
+        assert 0 <= cell_index <= 80, "Invalid cell_index"
+        if self._value & 1 << cell_index:
+            self._value -= 1 << cell_index
 
     def __repr__(self) -> str:
         return f"<bitboard #{self._number}: {self.decimal_value}>"
 
+    def is_in_row(self, row_index: int) -> bool:
+        """Returns a boolean indiciating if the number is in the row."""
+        shifts = range(row_index * 9, row_index * 9 + 9)
+        for shift in shifts:
+            if self._value & 1 << shift:
+                return True
+        return False
+
+    def is_in_column(self, column_index: int) -> bool:
+        """Returns a boolean indicating if the number is in the column."""
+        shifts = range(column_index, column_index + 73, 9)
+        for shift in shifts:
+            if self._value & 1 << shift:
+                return True
+        return False
+
+    def is_in_square(self, square_position) -> bool:
+        """Returns a boolean indicating if the number is in the square.
+        First, we get the rows and column indices for the square.
+        Then, we check if the number is in one of those rows.
+        If it isn't, we return False.
+        If it is, we check if it is also in one of the columns.
+        """
+        row_indices = range(square_position // 3 * 3, square_position // 3 * 3 + 3)
+        column_indices = range(square_position % 3 * 3, square_position % 3 * 3 + 3)
+        in_a_row = any([self.is_in_row(row_index) for row_index in row_indices])
+        if in_a_row:
+            return any(
+                [self.is_in_column(column_index) for column_index in column_indices]
+            )
+        return False
+
 
 def _get_square_indices() -> dict[list[tuple]]:
     square_indices = {}
-    for position in range(9):
-        vertical_offset = position // 3 * 27
-        horizontal_offset = position % 3 * 3
+    for square in range(9):
+        vertical_offset = square // 3 * 27
+        horizontal_offset = square % 3 * 3
         bottom_right_index = horizontal_offset + vertical_offset
         position_indices = [
             (bottom_right_index + offset, bottom_right_index + offset + 3)
             for offset in (0, 9, 18)
         ]
-        square_indices[position] = position_indices
+        square_indices[square] = position_indices
     return square_indices
 
 
@@ -67,6 +107,7 @@ class Board:
     """Class that represents the entirety of the sudoku board."""
 
     def __init__(self) -> None:
+        self._zero = Bitboard(0)
         self._one = Bitboard(1)
         self._two = Bitboard(2)
         self._three = Bitboard(3)
@@ -83,6 +124,7 @@ class Board:
     def _bitboards(self) -> tuple[Bitboard]:
         """Returns a tuple of all the bitboards."""
         bitboards = (
+            self._zero,
             self._one,
             self._two,
             self._three,
@@ -95,18 +137,20 @@ class Board:
         )
         return bitboards
 
-    def bitboard(self, number: int):
+    def _bitboard(self, number: int):
         """Returns the bitboard corresponding to the number argument."""
-        assert 1 <= number <= 9, "Invalid bitboard selection"
-        return self._bitboards[number - 1]
+        assert 0 <= number <= 9, "Invalid bitboard selection"
+        return self._bitboards[number]
 
     def to_list(self) -> list[int]:
         """Combines all bitboards into a list of 81 integers. 0 represents a blank cell."""
-        numbers = [0] * 81
+
+        # TODO check that bits are not on in multiple boards?
+        numbers = [None] * 81
         for bitboard in self._bitboards:
-            for cell in range(81):
-                if bitboard.decimal_value & 1 << cell:
-                    numbers[cell] = bitboard.number
+            for cell_index in range(81):
+                if bitboard.decimal_value & 1 << cell_index:
+                    numbers[cell_index] = bitboard.number
         return numbers
 
     def print_board(self) -> None:
@@ -152,8 +196,8 @@ class Board:
 
     def _square(self, position: int) -> set[int]:
         """Returns a set containing the numbers in the position's square.
-        The position is defined as an integer 0-8, from the bottom left to
-        the top right of the board.
+        The position is defined as an integer 0-8, from the bottom right to
+        the top left of the board.
         """
         numbers = self.to_list()
         indices = self._square_indices[position]

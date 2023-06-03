@@ -8,7 +8,7 @@ if __name__ == "__main__":
         i.set_bit(i.number)
 
     board.print_board()
-    for i in range(9):
-        print(board._square(i))
-        print(board._row(i))
-        print(board._column(i))
+    for bitboard in board._bitboards:
+        print(bitboard)
+        for i in range(9):
+            print(f"square #{i} ******************** {bitboard.is_in_square(i)}")

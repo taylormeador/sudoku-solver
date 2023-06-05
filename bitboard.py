@@ -1,7 +1,7 @@
 """Custom classes for internally representing the sudoku game as bitboards."""
 
 from solution import Solution
-from enums import Squares, Cells
+from enums import Squares, Cells, Rows, Columns
 
 
 class Bitboard:
@@ -15,7 +15,7 @@ class Bitboard:
 
     def __init__(self, number: int) -> None:
         self._number = number
-        self._value: int = 0
+        self._value = 0
 
         # since zero represents a blank cell, and we want to initialize the board
         # completely blank, we turn on all the bits in the zero bitboard
@@ -38,26 +38,26 @@ class Bitboard:
         """Returns the number (1-9) that this bitboard represents."""
         return self._number
 
-    def set_bit(self, cell_index: int) -> None:
-        """Turns on the bit at the position, if it is off.
+    def set_bit(self, cell: int) -> None:
+        """Turns on the bit at the cell index, if it is off.
         Otherwise, do nothing.
         """
-        assert 0 <= cell_index <= 80, "Invalid cell_index"
-        if not self._value & 1 << cell_index:
-            self._value += 1 << cell_index
+        assert 0 <= cell <= 80, "Invalid cell index"
+        if not self._value & (1 << cell):
+            self._value += 1 << cell
 
-    def reset_bit(self, cell_index: int) -> None:
-        """Turns off the bit at the position, if it is on.
+    def reset_bit(self, cell: int) -> None:
+        """Turns off the bit at the cell index, if it is on.
         Otherwise, do nothing.
         """
-        assert 0 <= cell_index <= 80, "Invalid cell_index"
-        if self._value & 1 << cell_index:
-            self._value -= 1 << cell_index
+        assert 0 <= cell <= 80, "Invalid cell index"
+        if self._value & (1 << cell):
+            self._value -= 1 << cell
 
     def __repr__(self) -> str:
         return f"<bitboard #{self._number}: {self.decimal_value}>"
 
-    def print_bitboard(self):
+    def print_bitboard(self) -> None:
         """Prints the bitboard in 9x9 form."""
         horizontal_line = " ———————————————————————"
         for i, number in enumerate(self.binary_value):
@@ -74,63 +74,45 @@ class Bitboard:
                 print(" |", end="")
         print(f"\n{horizontal_line} \n")
 
-    def is_in_row(self, row_index: int) -> bool:
-        """Returns a boolean indiciating if the number is in the row."""
-        shifts = range(row_index * 9, row_index * 9 + 9)
-        for shift in shifts:
-            if self._value & 1 << shift:
+    def is_in_row(self, row: int) -> bool:
+        """Returns a boolean indicating if the number is in the row."""
+        for index in Rows[row].indices:
+            if self._value & (1 << index):
                 return True
         return False
 
-    def is_in_column(self, column_index: int) -> bool:
+    def is_in_column(self, column: int) -> bool:
         """Returns a boolean indicating if the number is in the column."""
-        shifts = range(column_index, column_index + 73, 9)
-        for shift in shifts:
-            if self._value & 1 << shift:
+        for index in Columns[column].indices:
+            if self._value & (1 << index):
                 return True
         return False
 
-    def is_in_square(self, square_position) -> bool:
+    def is_in_square(self, square: int) -> bool:
         """Returns a boolean indicating if the number is in the square.
         First, we get the rows and column indices for the square.
         Then, we check if the number is in one of those rows.
         If it isn't, we return False.
         If it is, we check if it is also in one of the columns.
         """
-        row_indices = range(square_position // 3 * 3, square_position // 3 * 3 + 3)
-        column_indices = range(square_position % 3 * 3, square_position % 3 * 3 + 3)
-        in_a_row = any([self.is_in_row(row_index) for row_index in row_indices])
+        in_a_row = any([self.is_in_row(row) for row in Squares[square].rows])
         if in_a_row:
             return any(
-                [self.is_in_column(column_index) for column_index in column_indices]
+                [self.is_in_column(column) for column in Squares[square].columns]
             )
         return False
 
-    def not_in_row(self, row_index: int) -> bool:
+    def not_in_row(self, row: int) -> bool:
         """Convenience function to find if number is not in a row."""
-        return not self.is_in_row(row_index)
+        return not self.is_in_row(row)
 
-    def not_in_column(self, column_index: int) -> bool:
+    def not_in_column(self, column: int) -> bool:
         """Convenience function to find if number is not in a column."""
-        return not self.is_in_column(column_index)
+        return not self.is_in_column(column)
 
-    def not_in_square(self, square_position: int) -> bool:
+    def not_in_square(self, square: int) -> bool:
         """Convenience function to find if number is not in a square."""
-        return not self.is_in_square(square_position)
-
-
-def _get_square_indices() -> dict[list[tuple]]:
-    square_indices = {}
-    for square in range(9):
-        vertical_offset = square // 3 * 27
-        horizontal_offset = square % 3 * 3
-        bottom_right_index = horizontal_offset + vertical_offset
-        position_indices = [
-            (bottom_right_index + offset, bottom_right_index + offset + 3)
-            for offset in (0, 9, 18)
-        ]
-        square_indices[square] = position_indices
-    return square_indices
+        return not self.is_in_square(square)
 
 
 class Board:
@@ -147,8 +129,6 @@ class Board:
         self._seven = Bitboard(7)
         self._eight = Bitboard(8)
         self._nine = Bitboard(9)
-
-        self._square_indices = _get_square_indices()
 
         self._solution = Solution()
 
@@ -169,7 +149,7 @@ class Board:
         )
         return bitboards
 
-    def _bitboard(self, number: int):
+    def bitboard(self, number: int) -> Bitboard:
         """Returns the bitboard corresponding to the number argument."""
         assert 0 <= number <= 9, "Invalid bitboard selection"
         return self._bitboards[number]
@@ -209,34 +189,3 @@ class Board:
         for bitboard in self._bitboards:
             string_ += f"{bitboard}\n"
         return string_
-
-    def _row(self, row_index: int) -> set[int]:
-        """Returns a set of the numbers in a row. The row_index is an
-        integer 0-8, representing the rows of the board, from bottom to top.
-        """
-        numbers = self._to_list()
-        indices = (row_index * 9, row_index * 9 + 9)
-        return set(numbers[indices[0] : indices[1]])
-
-    def _column(self, column_index: int) -> set[int]:
-        """Returns a set of the numbers in a column. The col_index is an
-        integer 0-8, representing the rows of the board, from right to left.
-        """
-        numbers = self._to_list()
-        indices = [column_index + offset for offset in range(0, 81, 9)]
-        return set([numbers[index] for index in indices])
-
-    def _square(self, position: int) -> set[int]:
-        """Returns a set containing the numbers in the position's square.
-        The position is defined as an integer 0-8, from the bottom right to
-        the top left of the board.
-        """
-        numbers = self._to_list()
-        indices = self._square_indices[position]
-        rows = [numbers[index_pair[0] : index_pair[1]] for index_pair in indices]
-        flattened_rows = [number for row in rows for number in row]
-        return set(flattened_rows)
-
-    def _generate_random_board(self):
-        """Generates a random, valid, solved sudoku board."""
-        pass

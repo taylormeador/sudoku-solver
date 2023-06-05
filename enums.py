@@ -1,6 +1,8 @@
+# pylint: disable=invalid-name
 """Module that contains enums used to represent and solve the sudoku puzzle."""
 
 from enum import Enum
+from typing import Iterable
 
 
 class Squares(Enum):
@@ -25,7 +27,42 @@ class Squares(Enum):
     six = 6
     seven = 7
     eight = 8
-    nine = 9
+
+    def __init__(self, position) -> None:
+        self._indices = self._calculate_square_indices()
+        self._position = position
+
+    @staticmethod
+    def _calculate_square_indices() -> dict[list[tuple]]:
+        """Method that pre computes the cell indices in a square and stores them in a dict."""
+        square_indices = {}
+        for position in range(9):
+            vertical_offset = position // 3 * 27
+            horizontal_offset = position % 3 * 3
+            bottom_right_index = horizontal_offset + vertical_offset
+            position_indices = [
+                (bottom_right_index + offset, bottom_right_index + offset + 3)
+                for offset in (0, 9, 18)
+            ]
+            square_indices[position] = position_indices
+        return square_indices
+
+    @property
+    def indices(self) -> list[tuple]:
+        """Returns a list of tuples which represent the start and end ranges
+        of the indices in the square.
+        """
+        return self._indices[self.value]
+
+    @property
+    def rows(self) -> Iterable[int]:
+        """Returns a range which is the indices of the rows that are in the square."""
+        return range(self.value // 3 * 3, self.value // 3 * 3 + 3)
+
+    @property
+    def columns(self):
+        """Returns a range which is the indices of the columns that are in the square."""
+        return range(self.value % 3 * 3, self.value % 3 * 3 + 3)
 
 
 class Cells(Enum):
@@ -126,3 +163,97 @@ class Cells(Enum):
     seventy_eight = 78
     seventy_nine = 79
     eighty = 80
+
+    @property
+    def row(self) -> int:
+        """Returns the index of the row that the cell belongs to."""
+        return self.value // 9
+
+    @property
+    def column(self) -> int:
+        """Returns the index of the column that the cell belongs to."""
+        return self.value % 9
+
+    @property
+    def square(self) -> int:
+        """Returns the index of the square that the cell belongs to."""
+        return (self.row // 3 * 3) + (self.column // 3)
+
+
+class Rows(Enum):
+    """The rows are indexed 0-8 from bottom to top.
+
+      +---+---+---+---+---+---+---+---+---+
+    8 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    7 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    6 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    5 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    4 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    3 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    2 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    1 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    0 |   |   |   |   |   |   |   |   |   |
+      +---+---+---+---+---+---+---+---+---+
+    """
+
+    one = 1
+    two = 2
+    three = 3
+    four = 4
+    five = 5
+    six = 6
+    seven = 7
+    eight = 8
+
+    @property
+    def indices(self) -> Iterable[int]:
+        """Returns a range of the cell indices for the row."""
+        return range(self.value * 9, self.value * 9 + 9)
+
+
+class Columns(Enum):
+    """The columns are indexed 0-8 from right to left.
+
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+    |   |   |   |   |   |   |   |   |   |
+    +---+---+---+---+---+---+---+---+---+
+      8   7   6   5   4   3   2   1   0
+    """
+
+    one = 1
+    two = 2
+    three = 3
+    four = 4
+    five = 5
+    six = 6
+    seven = 7
+    eight = 8
+
+    @property
+    def indices(self) -> Iterable[int]:
+        """Returns a range of the cell indices for the column."""
+        return range(self.value, self.value + 73, 9)

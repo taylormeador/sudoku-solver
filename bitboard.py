@@ -1,6 +1,7 @@
 """Custom classes for internally representing the sudoku game as bitboards."""
 
-# TODO consider enums for square positions, cell indices, etc.
+from solution import Solution
+from enums import Squares, Cells
 
 
 class Bitboard:
@@ -19,8 +20,8 @@ class Bitboard:
         # since zero represents a blank cell, and we want to initialize the board
         # completely blank, we turn on all the bits in the zero bitboard
         if self._number == 0:
-            for i in range(81):
-                self.set_bit(i)
+            for cell in Cells:
+                self.set_bit(cell.value)
 
     @property
     def decimal_value(self) -> int:
@@ -105,6 +106,18 @@ class Bitboard:
             )
         return False
 
+    def not_in_row(self, row_index: int) -> bool:
+        """Convenience function to find if number is not in a row."""
+        return not self.is_in_row(row_index)
+
+    def not_in_column(self, column_index: int) -> bool:
+        """Convenience function to find if number is not in a column."""
+        return not self.is_in_column(column_index)
+
+    def not_in_square(self, square_position: int) -> bool:
+        """Convenience function to find if number is not in a square."""
+        return not self.is_in_square(square_position)
+
 
 def _get_square_indices() -> dict[list[tuple]]:
     square_indices = {}
@@ -137,6 +150,8 @@ class Board:
 
         self._square_indices = _get_square_indices()
 
+        self._solution = Solution()
+
     @property
     def _bitboards(self) -> tuple[Bitboard]:
         """Returns a tuple of all the bitboards."""
@@ -159,21 +174,21 @@ class Board:
         assert 0 <= number <= 9, "Invalid bitboard selection"
         return self._bitboards[number]
 
-    def to_list(self) -> list[int]:
+    def _to_list(self) -> list[int]:
         """Combines all bitboards into a list of 81 integers. 0 represents a blank cell."""
 
         # TODO check that bits are not on in multiple boards?
         numbers = [None] * 81
         for bitboard in self._bitboards:
-            for cell_index in range(81):
-                if bitboard.decimal_value & 1 << cell_index:
-                    numbers[cell_index] = bitboard.number
+            for cell in Cells:
+                if bitboard.decimal_value & 1 << cell.value:
+                    numbers[cell.value] = bitboard.number
         return numbers
 
-    def print_board(self) -> None:
+    def _print_board(self) -> None:
         """Prints the sudoku board in 9x9 form."""
         horizontal_line = " ———————————————————————"
-        numbers = self.to_list()
+        numbers = self._to_list()
         for i, number in enumerate(numbers[::-1]):
             if i % 9 == 0:
                 print()
@@ -199,7 +214,7 @@ class Board:
         """Returns a set of the numbers in a row. The row_index is an
         integer 0-8, representing the rows of the board, from bottom to top.
         """
-        numbers = self.to_list()
+        numbers = self._to_list()
         indices = (row_index * 9, row_index * 9 + 9)
         return set(numbers[indices[0] : indices[1]])
 
@@ -207,7 +222,7 @@ class Board:
         """Returns a set of the numbers in a column. The col_index is an
         integer 0-8, representing the rows of the board, from right to left.
         """
-        numbers = self.to_list()
+        numbers = self._to_list()
         indices = [column_index + offset for offset in range(0, 81, 9)]
         return set([numbers[index] for index in indices])
 
@@ -216,12 +231,12 @@ class Board:
         The position is defined as an integer 0-8, from the bottom right to
         the top left of the board.
         """
-        numbers = self.to_list()
+        numbers = self._to_list()
         indices = self._square_indices[position]
         rows = [numbers[index_pair[0] : index_pair[1]] for index_pair in indices]
         flattened_rows = [number for row in rows for number in row]
         return set(flattened_rows)
 
-    def generate_random_board(self, difficulty: str = "Medium", solved: bool = False):
-        """Generates a random, valid game board, solved or unsolved."""
+    def _generate_random_board(self):
+        """Generates a random, valid, solved sudoku board."""
         pass

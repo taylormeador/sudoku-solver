@@ -257,3 +257,17 @@ class Columns(Enum):
     def indices(self) -> Iterable[int]:
         """Returns a range of the cell indices for the column."""
         return range(self.value, self.value + 73, 9)
+
+
+class Numbers(Enum):
+    """Enum for representing the numbers in the game, 1-9."""
+
+    one = 1
+    two = 2
+    three = 3
+    four = 4
+    five = 5
+    six = 6
+    seven = 7
+    eight = 8
+    nine = 9

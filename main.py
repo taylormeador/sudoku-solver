@@ -1,8 +1,9 @@
 """Main."""
 
 from bitboard import Board
-import random
 
 if __name__ == "__main__":
     board = Board()
-    board.generate_random_board()
+    board.bitboard(1).set_bit(0)
+    board.print_board()
+    print(board._solution._find_candidates(0))

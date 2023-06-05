@@ -76,14 +76,14 @@ class Bitboard:
 
     def is_in_row(self, row: int) -> bool:
         """Returns a boolean indicating if the number is in the row."""
-        for index in Rows[row].indices:
+        for index in list(Rows)[row].indices:
             if self._value & (1 << index):
                 return True
         return False
 
     def is_in_column(self, column: int) -> bool:
         """Returns a boolean indicating if the number is in the column."""
-        for index in Columns[column].indices:
+        for index in list(Columns)[column].indices:
             if self._value & (1 << index):
                 return True
         return False
@@ -95,12 +95,16 @@ class Bitboard:
         If it isn't, we return False.
         If it is, we check if it is also in one of the columns.
         """
-        in_a_row = any([self.is_in_row(row) for row in Squares[square].rows])
+        in_a_row = any([self.is_in_row(row) for row in list(Squares)[square].rows])
         if in_a_row:
             return any(
-                [self.is_in_column(column) for column in Squares[square].columns]
+                [self.is_in_column(column) for column in list(Squares)[square].columns]
             )
         return False
+
+    def is_in_cell(self, cell: int) -> bool:
+        """Returns True if the number is in the cell, False otherwise."""
+        return self._value & 1 << cell
 
     def not_in_row(self, row: int) -> bool:
         """Convenience function to find if number is not in a row."""
@@ -113,6 +117,10 @@ class Bitboard:
     def not_in_square(self, square: int) -> bool:
         """Convenience function to find if number is not in a square."""
         return not self.is_in_square(square)
+
+    def not_in_cell(self, cell: int) -> bool:
+        """Convenience function to find if number is not in a cell."""
+        return not self.is_in_cell(cell)
 
 
 class Board:
@@ -130,7 +138,7 @@ class Board:
         self._eight = Bitboard(8)
         self._nine = Bitboard(9)
 
-        self._solution = Solution()
+        self._solution = Solution(self)
 
     @property
     def _bitboards(self) -> tuple[Bitboard]:
@@ -154,7 +162,7 @@ class Board:
         assert 0 <= number <= 9, "Invalid bitboard selection"
         return self._bitboards[number]
 
-    def _to_list(self) -> list[int]:
+    def to_list(self) -> list[int]:
         """Combines all bitboards into a list of 81 integers. 0 represents a blank cell."""
 
         # TODO check that bits are not on in multiple boards?
@@ -165,10 +173,10 @@ class Board:
                     numbers[cell.value] = bitboard.number
         return numbers
 
-    def _print_board(self) -> None:
+    def print_board(self) -> None:
         """Prints the sudoku board in 9x9 form."""
         horizontal_line = " ———————————————————————"
-        numbers = self._to_list()
+        numbers = self.to_list()
         for i, number in enumerate(numbers[::-1]):
             if i % 9 == 0:
                 print()

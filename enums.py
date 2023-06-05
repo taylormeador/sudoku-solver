@@ -33,15 +33,20 @@ class Squares(Enum):
         self._position = position
 
     @staticmethod
-    def _calculate_square_indices() -> dict[list[tuple]]:
-        """Method that pre computes the cell indices in a square and stores them in a dict."""
+    def _calculate_square_indices() -> dict[list[Iterable]]:
+        """Method that pre computes the cell indices in a square and stores them in a dict.
+        The list contains three tuples.
+
+        square_indices[0] = [range(0, 3), range(9, 12), range(18, 21)]
+
+        """
         square_indices = {}
         for position in range(9):
             vertical_offset = position // 3 * 27
             horizontal_offset = position % 3 * 3
             bottom_right_index = horizontal_offset + vertical_offset
             position_indices = [
-                (bottom_right_index + offset, bottom_right_index + offset + 3)
+                range(bottom_right_index + offset, bottom_right_index + offset + 3)
                 for offset in (0, 9, 18)
             ]
             square_indices[position] = position_indices
@@ -204,6 +209,7 @@ class Rows(Enum):
       +---+---+---+---+---+---+---+---+---+
     """
 
+    zero = 0
     one = 1
     two = 2
     three = 3
@@ -244,6 +250,7 @@ class Columns(Enum):
       8   7   6   5   4   3   2   1   0
     """
 
+    zero = 0
     one = 1
     two = 2
     three = 3

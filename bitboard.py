@@ -95,16 +95,16 @@ class Bitboard:
         If it isn't, we return False.
         If it is, we check if it is also in one of the columns.
         """
-        in_a_row = any([self.is_in_row(row) for row in list(Squares)[square].rows])
-        if in_a_row:
-            return any(
-                [self.is_in_column(column) for column in list(Squares)[square].columns]
-            )
+        square = list(Squares)[square]
+        for indices in square.indices:
+            for index in indices:
+                if self._value & (1 << index):
+                    return True
         return False
 
     def is_in_cell(self, cell: int) -> bool:
         """Returns True if the number is in the cell, False otherwise."""
-        return self._value & 1 << cell
+        return bool(self._value & (1 << cell))
 
     def not_in_row(self, row: int) -> bool:
         """Convenience function to find if number is not in a row."""
@@ -197,3 +197,17 @@ class Board:
         for bitboard in self._bitboards:
             string_ += f"{bitboard}\n"
         return string_
+
+    def cell_is_empty(self, cell: int) -> bool:
+        """Returns True if the cell is empty (0), False otherwise."""
+        return bool(self.bitboard(0).decimal_value & (1 << cell))
+
+    def fill_cell(self, cell: int, number: int) -> None:
+        """Places the number in the cell on the board by setting the bit in the
+        correct bitboard, and also resetting the bit in all other bitboards.
+        """
+        for bitboard in self._bitboards:
+            if bitboard.number != number:
+                bitboard.reset_bit(cell)
+            else:
+                bitboard.set_bit(cell)

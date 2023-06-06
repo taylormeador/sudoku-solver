@@ -1,6 +1,6 @@
 """Custom classes for internally representing the sudoku game as bitboards."""
 
-from solution import Solution
+from solution import BruteForceSolution
 from enums import Squares, Cells, Rows, Columns
 
 
@@ -138,7 +138,7 @@ class Board:
         self._eight = Bitboard(8)
         self._nine = Bitboard(9)
 
-        self._solution = Solution(self)
+        self._solution = BruteForceSolution(self)
 
     @property
     def _bitboards(self) -> tuple[Bitboard]:
@@ -164,8 +164,6 @@ class Board:
 
     def to_list(self) -> list[int]:
         """Combines all bitboards into a list of 81 integers. 0 represents a blank cell."""
-
-        # TODO check that bits are not on in multiple boards?
         numbers = [None] * 81
         for bitboard in self._bitboards:
             for cell in Cells:
@@ -201,6 +199,24 @@ class Board:
     def cell_is_empty(self, cell: int) -> bool:
         """Returns True if the cell is empty (0), False otherwise."""
         return bool(self.bitboard(0).decimal_value & (1 << cell))
+
+    def cell_can_contain(self, cell: int, number: int) -> bool:
+        """Returns True if the given number would not violate any constraints
+        if it were placed in the cell. This should only be called if you already
+        know that the cell is empty."""
+        cell = list(Cells)[cell]
+        return (
+            self.bitboard(number).not_in_row(cell.row)
+            and self.bitboard(number).not_in_column(cell.column)
+            and self.bitboard(number).not_in_square(cell.square)
+        )
+
+    def get_cell_value(self, cell: int) -> int:
+        """Returns the number 1-9 that a cell currently contains, or 0 if it is empty."""
+        for bitboard in self._bitboards:
+            if bitboard.decimal_value & (1 << cell):
+                return bitboard.number
+        return 0
 
     def fill_cell(self, cell: int, number: int) -> None:
         """Places the number in the cell on the board by setting the bit in the

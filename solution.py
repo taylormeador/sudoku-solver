@@ -98,3 +98,62 @@ class BruteForceSolution(Solution):
                 solved = True
                 self._board.print_board()
                 print("Puzzle solved.\n")
+
+    def _get_cells_to_solve(self) -> list[int]:
+        """Returns a list of integers which represent the cells on a board that are
+        already filled in (hints).
+        """
+        cells_to_solve = []
+        for cell in Cells:
+            if self._board.cell_is_empty(cell.value):
+                cells_to_solve.append(cell.value)
+        return cells_to_solve
+
+    def solve_board_with_hints(self):
+        """Finds a solution to a puzzle with some cells already filled in."""
+        solved = False
+        i = 0
+        cells = self._get_cells_to_solve()
+        number = 1
+        previous_cell_value = 0
+        while not solved:
+            # we have to get the cell since we don't want to overwrite a hinted cell
+            cell = cells[i]
+
+            if self._board.cell_is_empty(cell):  # check if cell is empty
+                # loop through the numbers, looking for a valid one
+                cell_is_solved = False
+                while number < 10:
+                    if self._board.cell_can_contain(cell, number):
+                        # fill the cell if the number was valid, then continue to the next cell
+                        self._board.fill_cell(cell, number)
+                        previous_cell_value = number
+                        cell_is_solved = True
+                        break
+                    number += 1
+
+                if not cell_is_solved:
+                    # getting here means none of the numbers were valid, so we want
+                    # to leave the cell blank, and backup to the previous cell and increment it.
+                    # To backup, we need to remember what number it currently is, and start
+                    # with the next number. The cell needs to be blank so that the algorithm tries to
+                    # solve it.
+                    number = 1 + previous_cell_value
+                    previous_cell = cells[i - 1]
+                    previous_previous_cell = cells[i - 2]
+                    previous_cell_value = self._board.get_cell_value(
+                        previous_previous_cell
+                    )
+                    self._board.fill_cell(previous_cell, 0)
+                    i -= 1
+                    continue
+
+            # we solved this cell, so we increment the cell index so we can solve the next
+            i += 1
+            number = 1
+
+            # terminal case
+            if cell == cells[-1]:
+                solved = True
+                self._board.print_board()
+                print("Puzzle solved.\n")
